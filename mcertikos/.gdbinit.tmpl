@@ -1,0 +1,38 @@
+set $rm=1
+
+# Change architecture dynamically between 16 and 32 bit
+define hook-stop
+  if ($cr0 & 1) == 1
+    if $rm == 1
+        set architecture i386:x86-64
+        set $rm=0
+    end
+#    x/i $pc # Print the next instruction
+  else
+    if $rm == 0
+        set architecture i8086
+        set $rm=1
+    end
+    printf "[%4x:%4x] ", $cs, (unsigned short)$pc
+    x/i $pc
+  end
+end
+
+set architecture i386:x86-64
+echo + symbol-file obj/kern/kernel\n
+file obj/kern/kernel
+
+add-symbol-file obj/boot/boot0.elf 0x7c00
+add-symbol-file obj/boot/boot1.elf 0x7e00
+add-symbol-file obj/kern/kernel 0x100000
+
+echo + target remote localhost:1234\n
+target remote localhost:1234
+
+layout asm
+winheight asm 50
+
+layout reg
+winheight reg 8
+
+focus cmd
